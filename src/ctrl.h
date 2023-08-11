@@ -1,3 +1,11 @@
+#ifndef CTRL_H
+#define CTRL_H
+
+#if __cplusplus
+extern "C"
+{
+#endif
+
 #include "ctrlcodes.h"
 #include <stdint.h>
 
@@ -77,6 +85,12 @@ CTRLcontrol ctrl_get_control(CTRLgroup* group, uint32_t tag);
 void ctrl_remove_control(CTRLgroup* group, uint32_t tag);
 void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t newActions);
 
-void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, void (*control_set_callback)(CTRLcode, void*), void* userData);
+void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, CTRLcode cancelCode, void (*control_set_callback)(uint8_t, CTRLcode, void*), void* userData);
 
 const char* ctrl_get_code_name(CTRLcode code);
+
+#if __cplusplus
+}
+#endif
+
+#endif

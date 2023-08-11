@@ -1,3 +1,6 @@
+#ifndef CTRLCODES_H
+#define CTRLCODES_H
+
 typedef enum CTRLaction
 {
 	CTRL_PRESS   = 1 << 0,
@@ -143,3 +146,5 @@ typedef enum CTRLcode
 
 	CTRL_CODE_COUNT
 } CTRLcode;
+
+#endif

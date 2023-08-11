@@ -3,7 +3,7 @@ project(ctrl VERSION 1.0)
 
 # find source files:
 file(GLOB_RECURSE ctrl_src CONFIGURE_DEPENDS "src/*.c")
-add_executable(${PROJECT_NAME} ${ctrl_src})
+add_library(${PROJECT_NAME} STATIC ${ctrl_src})
 
 # find include diretories and libraries
 find_package(GLFW3 3.3 REQUIRED)

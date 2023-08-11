@@ -14,9 +14,10 @@ static CTRLinput g_inputs[CTRL_MAX_INPUTS];
 static void (*g_input_callback)(uint32_t, CTRLcode, CTRLaction, float, void*) = NULL;
 static void* g_inputCallbackUserData                                          = NULL;
 
-static CTRLcontrol* g_controlToSet                     = NULL;
-static void (*g_control_set_callback)(CTRLcode, void*) = NULL;
-static void* g_controlSetCallbackUserData              = NULL;
+static CTRLcontrol* g_controlToSet                              = NULL;
+static CTRLcode g_cancelControlSetCode                          = CTRL_CODE_NONE;
+static void (*g_control_set_callback)(uint8_t, CTRLcode, void*) = NULL;
+static void* g_controlSetCallbackUserData                       = NULL;
 
 //--------------------------------------------------------------------------------------------------------------------------------//
 
@@ -42,10 +43,12 @@ void ctrl_push_input(CTRLinput input)
 {
 	if(g_controlToSet && input.action == CTRL_PRESS)
 	{
-		g_controlToSet->code = input.code;
+		uint8_t set = input.code != g_cancelControlSetCode;
+		if(set)
+			g_controlToSet->code = input.code;
 
 		if(g_control_set_callback)
-			g_control_set_callback(input.code, g_controlSetCallbackUserData);
+			g_control_set_callback(set, input.code, g_controlSetCallbackUserData);
 
 		g_controlToSet = NULL;
 		g_control_set_callback = NULL;
@@ -229,7 +232,7 @@ void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t
 
 //--------------------------------------------------------------------------------------------------------------------------------//
 
-void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, void (*control_set_callback)(CTRLcode, void*), void* userData)
+void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, CTRLcode cancelCode, void (*control_set_callback)(uint8_t, CTRLcode, void*), void* userData)
 {
 	uint32_t i = 0;
 	while(i < group->arraySize && group->controls[i].tag != tag)
@@ -240,6 +243,7 @@ void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, void (*contr
 
 	group->controls[i].inherit = 0;
 	g_controlToSet = &group->controls[i];
+	g_cancelControlSetCode = cancelCode;
 	g_control_set_callback = control_set_callback;
 	g_controlSetCallbackUserData = userData;
 }
