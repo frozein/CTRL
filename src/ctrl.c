@@ -41,7 +41,7 @@ void ctrl_set_groups(uint32_t numGroups, CTRLgroup** groups)
 
 void ctrl_push_input(CTRLinput input)
 {
-	if(g_controlToSet && input.action == CTRL_PRESS)
+	if(g_controlToSet && (input.action & CTRL_PRESS))
 	{
 		uint8_t set = input.code != g_cancelControlSetCode;
 		if(set)
