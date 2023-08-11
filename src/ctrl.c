@@ -11,7 +11,7 @@ static CTRLgroup* g_groups[CTRL_MAX_GROUPS];
 static uint32_t g_numInputs = 0;
 static CTRLinput g_inputs[CTRL_MAX_INPUTS];
 
-static void (*g_input_callback)(uint32_t, CTRLcode, CTRLaction, float, void*) = NULL;
+static void (*g_input_callback)(uint32_t, CTRLcode, CTRLaction, uint32_t, float, void*) = NULL;
 static void* g_inputCallbackUserData                                          = NULL;
 
 static CTRLcontrol* g_controlToSet                              = NULL;
@@ -21,7 +21,7 @@ static void* g_controlSetCallbackUserData                       = NULL;
 
 //--------------------------------------------------------------------------------------------------------------------------------//
 
-void ctrl_set_callback(void (*input_callback)(uint32_t, CTRLcode, CTRLaction, float, void*), void* userData)
+void ctrl_set_callback(void (*input_callback)(uint32_t, CTRLcode, CTRLaction, uint32_t, float, void*), void* userData)
 {
 	g_input_callback = input_callback;
 	g_inputCallbackUserData = userData;
@@ -92,7 +92,7 @@ void ctrl_process_input()
 			if(actions & CTRL_HOLD)
 			{
 				if(ctrl_code_held(code) && (mods == CTRL_MOD_ANY || mods == holdMods))
-					g_input_callback(g_groups[g]->controls[i].tag, code, CTRL_HOLD, 0.0f, g_inputCallbackUserData);
+					g_input_callback(g_groups[g]->controls[i].tag, code, CTRL_HOLD, holdMods, 0.0f, g_inputCallbackUserData);
 
 				if(actions == CTRL_HOLD)
 					continue;
@@ -101,7 +101,7 @@ void ctrl_process_input()
 			for(uint32_t j = 0; j < g_numInputs; j++)
 			{
 				if(code == g_inputs[j].code && (actions & g_inputs[j].action) && (mods == CTRL_MOD_ANY || mods == g_inputs[j].mods))
-					g_input_callback(g_groups[g]->controls[i].tag, code, g_inputs[j].action, g_inputs[j].dir, g_inputCallbackUserData);
+					g_input_callback(g_groups[g]->controls[i].tag, code, g_inputs[j].action, mods, g_inputs[j].dir, g_inputCallbackUserData);
 			}
 		}
 	}
@@ -169,9 +169,6 @@ void ctrl_add_control(CTRLgroup* group, CTRLcontrol control)
 	{
 		group->arraySize *= 2;
 		group->controls = CTRL_REALLOC(group->controls, group->arraySize * sizeof(CTRLcontrol));
-
-		for(uint32_t i = group->numControls; i < group->arraySize; i++)
-			group->controls[i].tag = CTRL_INVALID_TAG;
 	}
 }
 
