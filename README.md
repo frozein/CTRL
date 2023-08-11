@@ -70,4 +70,4 @@ int main()
 More detailed documentaion can be found in `ctrl.h`
 
 ## Building
-The included `CMakeLists.txt` can be used to generate project files. It currently is set to build to a static library, but simply change `add_library(${PROJECT_NAME} STATIC ${ctrl_src})` to `add_executable(${PROJECT_NAME} ${ctrl_src})`
+The included `CMakeLists.txt` can be used to generate project files. It currently is set to build to a static library, but simply change `add_library(${PROJECT_NAME} STATIC ${ctrl_src})` to `add_executable(${PROJECT_NAME} ${ctrl_src})` if you wish to build an executable.
