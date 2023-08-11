@@ -9,6 +9,15 @@ typedef enum CTRLaction
 	CTRL_REPEAT  = 1 << 3
 } CTRLaction;
 
+typedef enum CTRLmod
+{
+	CTRL_MOD_SHIFT   = 1 << 0,
+	CTRL_MOD_CONTROL = 1 << 1,
+	CTRL_MOD_ALT     = 1 << 2,
+
+	CTRL_MOD_ANY = 255
+} CTRLmod;
+
 typedef enum CTRLcode
 {
 	CTRL_CODE_NONE = 0,

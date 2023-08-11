@@ -26,6 +26,7 @@ typedef struct CTRLcontrol
 	};
 	
 	uint32_t actions;
+	uint32_t mods;
 } CTRLcontrol;
 
 typedef struct CTRLgroup
@@ -39,6 +40,7 @@ typedef struct CTRLinput
 {
 	CTRLcode code;
 	CTRLaction action;
+	uint32_t mods;
 	float dir; //for scrolling / joystick input
 } CTRLinput;
 
@@ -77,13 +79,12 @@ void ctrl_process_input();
 CTRLgroup ctrl_create_group();
 void ctrl_free_group(CTRLgroup group);
 
-CTRLcontrol ctrl_control(uint32_t tag, CTRLcode code, uint32_t actions);
+CTRLcontrol ctrl_control(uint32_t tag, CTRLcode code, uint32_t actions, uint32_t mods);
 CTRLcontrol ctrl_control_inherit(CTRLgroup parentGroup, uint32_t parentTag, uint32_t tag, uint32_t actions);
 
 void ctrl_add_control(CTRLgroup* group, CTRLcontrol control);
 CTRLcontrol ctrl_get_control(CTRLgroup* group, uint32_t tag);
-void ctrl_remove_control(CTRLgroup* group, uint32_t tag);
-void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t newActions);
+void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t newActions, uint32_t newMods);
 
 void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, CTRLcode cancelCode, void (*control_set_callback)(uint8_t, CTRLcode, void*), void* userData);
 

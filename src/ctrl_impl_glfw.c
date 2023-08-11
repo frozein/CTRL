@@ -4,6 +4,7 @@
 //--------------------------------------------------------------------------------------------------------------------------------//
 
 CTRLaction _ctrl_glfw_action_to_action(int32_t action);
+uint32_t _ctrl_glfw_mods_to_mods(int32_t mods);
 CTRLcode _ctrl_glfw_key_to_code(int32_t key);
 CTRLcode _ctrl_glfw_mouse_button_to_code(int32_t button);
 
@@ -61,6 +62,20 @@ CTRLaction _ctrl_glfw_action_to_action(int32_t action)
 	}
 
 	return 0;
+}
+
+uint32_t _ctrl_glfw_mods_to_mods(int32_t mods)
+{
+	uint32_t ctrlMods = 0;
+
+	if(mods & GLFW_MOD_SHIFT)
+		ctrlMods |= CTRL_MOD_SHIFT;
+	if(mods & GLFW_MOD_CONTROL)
+		ctrlMods |= CTRL_MOD_CONTROL;
+	if(mods & GLFW_MOD_ALT)
+		ctrlMods || CTRL_MOD_ALT;
+
+	return ctrlMods;
 }
 
 CTRLcode _ctrl_glfw_key_to_code(int32_t key)
@@ -561,6 +576,7 @@ void _ctrl_key_callback(GLFWwindow* window, int32_t key, int32_t scancode, int32
 	input.code = _ctrl_glfw_key_to_code(key);
 	input.action = _ctrl_glfw_action_to_action(action);
 	input.dir = 0.0f;
+	input.mods = _ctrl_glfw_mods_to_mods(mods);
 
 	ctrl_push_input(input);
 }
@@ -571,12 +587,18 @@ void _ctrl_mouse_button_callback(GLFWwindow* window, int32_t button, int32_t act
 	input.code = _ctrl_glfw_mouse_button_to_code(button);
 	input.action = _ctrl_glfw_action_to_action(action);
 	input.dir = 0.0f;
+	input.mods = _ctrl_glfw_mods_to_mods(mods);
 
 	ctrl_push_input(input);
 }
 
 void _ctrl_scroll_callback(GLFWwindow* window, double offsetX, double offsetY)
 {
+	uint32_t mods = 0;
+	mods |= (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT  ) || glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT  )) * CTRL_MOD_SHIFT;
+	mods |= (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) || glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL)) * CTRL_MOD_CONTROL;
+	mods |= (glfwGetKey(window, GLFW_KEY_LEFT_ALT    ) || glfwGetKey(window, GLFW_KEY_RIGHT_ALT    )) * CTRL_MOD_ALT;
+
 	if(offsetX != 0.0f)
 	{
 		CTRLinput input;

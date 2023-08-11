@@ -72,23 +72,26 @@ void ctrl_process_input()
 		return;
 	}
 
+	uint32_t holdMods = 0;
+	holdMods |= (ctrl_code_held(CTRL_KEY_LEFT_SHIFT  ) || ctrl_code_held(CTRL_KEY_RIGHT_SHIFT  )) * CTRL_MOD_SHIFT;
+	holdMods |= (ctrl_code_held(CTRL_KEY_LEFT_CONTROL) || ctrl_code_held(CTRL_KEY_RIGHT_CONTROL)) * CTRL_MOD_CONTROL;
+	holdMods |= (ctrl_code_held(CTRL_KEY_LEFT_ALT    ) || ctrl_code_held(CTRL_KEY_RIGHT_ALT    )) * CTRL_MOD_ALT;
+
 	for(uint32_t g = 0; g < g_numGroups; g++)
 	{
-		for(uint32_t i = 0; i < g_groups[g]->arraySize; i++)
+		for(uint32_t i = 0; i < g_groups[g]->numControls; i++)
 		{
-			if(g_groups[g]->controls[i].tag == CTRL_INVALID_TAG)
-				continue;
-
 			uint32_t parent = i;
 			while(g_groups[g]->controls[parent].inherit && g_groups[g]->controls[parent].parentIdx != CTRL_INVALID_INDEX)
 				parent = g_groups[g]->controls[parent].parentIdx;
 
-			CTRLaction actions = g_groups[g]->controls[i].actions;
+			uint32_t actions = g_groups[g]->controls[i].actions;
 			CTRLcode code = g_groups[g]->controls[parent].code;
+			uint32_t mods = g_groups[g]->controls[parent].mods;
 
 			if(actions & CTRL_HOLD)
 			{
-				if(ctrl_code_held(code))
+				if(ctrl_code_held(code) && (mods == CTRL_MOD_ANY || mods == holdMods))
 					g_input_callback(g_groups[g]->controls[i].tag, code, CTRL_HOLD, 0.0f, g_inputCallbackUserData);
 
 				if(actions == CTRL_HOLD)
@@ -97,7 +100,7 @@ void ctrl_process_input()
 
 			for(uint32_t j = 0; j < g_numInputs; j++)
 			{
-				if(code == g_inputs[j].code && (actions & g_inputs[j].action))
+				if(code == g_inputs[j].code && (actions & g_inputs[j].action) && (mods == CTRL_MOD_ANY || mods == g_inputs[j].mods))
 					g_input_callback(g_groups[g]->controls[i].tag, code, g_inputs[j].action, g_inputs[j].dir, g_inputCallbackUserData);
 			}
 		}
@@ -117,9 +120,6 @@ CTRLgroup ctrl_create_group()
 	group.arraySize = startSize;
 	group.controls = CTRL_MALLOC(group.arraySize * sizeof(CTRLcontrol));
 
-	for(uint32_t i = 0; i < group.arraySize; i++)
-		group.controls[i].tag = CTRL_INVALID_TAG;
-
 	return group;
 }
 
@@ -130,13 +130,14 @@ void ctrl_free_group(CTRLgroup group)
 
 //--------------------------------------------------------------------------------------------------------------------------------//
 
-CTRLcontrol ctrl_control(uint32_t tag, CTRLcode code, uint32_t actions)
+CTRLcontrol ctrl_control(uint32_t tag, CTRLcode code, uint32_t actions, uint32_t mods)
 {
 	CTRLcontrol control;
 	control.tag = tag;
 	control.inherit = 0;
 	control.code = code;
 	control.actions = actions;
+	control.mods = mods;
 
 	return control;
 }
@@ -149,7 +150,7 @@ CTRLcontrol ctrl_control_inherit(CTRLgroup parentGroup, uint32_t parentTag, uint
 	control.parentIdx = CTRL_INVALID_INDEX;
 	control.actions = actions;
 
-	for(uint32_t i = 0; i < parentGroup.arraySize; i++)
+	for(uint32_t i = 0; i < parentGroup.numControls; i++)
 		if(parentGroup.controls[i].tag == parentTag)
 		{
 			control.parentIdx = i;
@@ -163,15 +164,7 @@ CTRLcontrol ctrl_control_inherit(CTRLgroup parentGroup, uint32_t parentTag, uint
 
 void ctrl_add_control(CTRLgroup* group, CTRLcontrol control)
 {
-	uint32_t i = 0;
-	while(i < group->arraySize && group->controls[i].tag != CTRL_INVALID_TAG)
-		i++;
-	
-	if(i >= group->arraySize)
-		return;
-
-	group->controls[i] = control;
-	group->numControls++;
+	group->controls[group->numControls++] = control;
 	if(group->numControls >= group->arraySize)
 	{
 		group->arraySize *= 2;
@@ -185,10 +178,10 @@ void ctrl_add_control(CTRLgroup* group, CTRLcontrol control)
 CTRLcontrol ctrl_get_control(CTRLgroup* group, uint32_t tag)
 {
 	uint32_t i = 0;
-	while(i < group->arraySize && group->controls[i].tag != tag)
+	while(i < group->numControls && group->controls[i].tag != tag)
 		i++;
 
-	if(i >= group->arraySize)
+	if(i >= group->numControls)
 	{
 		CTRLcontrol invalidControl;
 		invalidControl.tag = CTRL_INVALID_TAG;
@@ -199,32 +192,20 @@ CTRLcontrol ctrl_get_control(CTRLgroup* group, uint32_t tag)
 		return group->controls[i];
 }
 
-void ctrl_remove_control(CTRLgroup* group, uint32_t tag)
+void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t newActions, uint32_t newMods)
 {
 	uint32_t i = 0;
-	while(i < group->arraySize && group->controls[i].tag != tag)
-		i++;
-	
-	if(i < group->arraySize)
-	{
-		group->controls[i].tag = CTRL_INVALID_TAG;
-		group->numControls--;
-	}
-}
-
-void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t newActions)
-{
-	uint32_t i = 0;
-	while(i < group->arraySize && group->controls[i].tag != tag)
+	while(i < group->numControls && group->controls[i].tag != tag)
 		i++;
 
-	if(i >= group->arraySize)
+	if(i >= group->numControls)
 		return;
 	
 	if(newCode != CTRL_CODE_NONE)
 	{
 		group->controls[i].inherit = 0;
 		group->controls[i].code = newCode;
+		group->controls[i].mods = newMods;
 	}
 	if(newActions != 0)
 		group->controls[i].actions = newActions;
@@ -235,10 +216,10 @@ void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t
 void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, CTRLcode cancelCode, void (*control_set_callback)(uint8_t, CTRLcode, void*), void* userData)
 {
 	uint32_t i = 0;
-	while(i < group->arraySize && group->controls[i].tag != tag)
+	while(i < group->numControls && group->controls[i].tag != tag)
 		i++;
 	
-	if(i >= group->arraySize)
+	if(i >= group->numControls)
 		return;
 
 	group->controls[i].inherit = 0;
