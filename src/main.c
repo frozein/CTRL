@@ -30,6 +30,11 @@ void input_callback(uint32_t control, CTRLcode code, CTRLaction action, float di
 	}
 }
 
+void set_callback(CTRLcode code, void* userData)
+{
+	printf("set\n");
+}
+
 int main()
 {
 	glfwInit();
@@ -49,8 +54,7 @@ int main()
 	ctrl_add_control(&mainGroup, ctrl_control_inherit(mainGroup, CONTROL_PARENT, CONTROL_3, CTRL_REPEAT));
 	ctrl_add_control(&mainGroup, ctrl_control_inherit(mainGroup, CONTROL_PARENT, CONTROL_4, CTRL_REPEAT));
 	
-	ctrl_set_control(&mainGroup, CONTROL_PARENT, CTRL_KEY_P, 0);
-	ctrl_remove_control(&mainGroup, CONTROL_4);
+	ctrl_set_control_to_next_input(&mainGroup, CONTROL_PARENT, set_callback, NULL);
 
 	while(!glfwWindowShouldClose(window))
 	{

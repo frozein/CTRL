@@ -11,15 +11,19 @@ static CTRLgroup* g_groups[CTRL_MAX_GROUPS];
 static uint32_t g_numInputs = 0;
 static CTRLinput g_inputs[CTRL_MAX_INPUTS];
 
-static void (*g_input_callback)(uint32_t, CTRLcode, CTRLaction, float, void*);
-static void* g_callbackUserData;
+static void (*g_input_callback)(uint32_t, CTRLcode, CTRLaction, float, void*) = NULL;
+static void* g_inputCallbackUserData                                          = NULL;
+
+static CTRLcontrol* g_controlToSet                     = NULL;
+static void (*g_control_set_callback)(CTRLcode, void*) = NULL;
+static void* g_controlSetCallbackUserData              = NULL;
 
 //--------------------------------------------------------------------------------------------------------------------------------//
 
-void ctrl_set_callback(void (*callback)(uint32_t, CTRLcode, CTRLaction, float, void*), void* userData)
+void ctrl_set_callback(void (*input_callback)(uint32_t, CTRLcode, CTRLaction, float, void*), void* userData)
 {
-	g_input_callback = callback;
-	g_callbackUserData = userData;
+	g_input_callback = input_callback;
+	g_inputCallbackUserData = userData;
 }
 
 void ctrl_set_groups(uint32_t numGroups, CTRLgroup** groups)
@@ -36,6 +40,20 @@ void ctrl_set_groups(uint32_t numGroups, CTRLgroup** groups)
 
 void ctrl_push_input(CTRLinput input)
 {
+	if(g_controlToSet && input.action == CTRL_PRESS)
+	{
+		g_controlToSet->code = input.code;
+
+		if(g_control_set_callback)
+			g_control_set_callback(input.code, g_controlSetCallbackUserData);
+
+		g_controlToSet = NULL;
+		g_control_set_callback = NULL;
+		g_controlSetCallbackUserData = NULL;
+
+		return;
+	}
+
 	if(g_numInputs >= CTRL_MAX_INPUTS)
 		return;
 	
@@ -68,7 +86,7 @@ void ctrl_process_input()
 			if(actions & CTRL_HOLD)
 			{
 				if(ctrl_code_held(code))
-					g_input_callback(g_groups[g]->controls[i].tag, code, CTRL_HOLD, 0.0f, g_callbackUserData);
+					g_input_callback(g_groups[g]->controls[i].tag, code, CTRL_HOLD, 0.0f, g_inputCallbackUserData);
 
 				if(actions == CTRL_HOLD)
 					continue;
@@ -77,7 +95,7 @@ void ctrl_process_input()
 			for(uint32_t j = 0; j < g_numInputs; j++)
 			{
 				if(code == g_inputs[j].code && (actions & g_inputs[j].action))
-					g_input_callback(g_groups[g]->controls[i].tag, code, g_inputs[j].action, g_inputs[j].dir, g_callbackUserData);
+					g_input_callback(g_groups[g]->controls[i].tag, code, g_inputs[j].action, g_inputs[j].dir, g_inputCallbackUserData);
 			}
 		}
 	}
@@ -207,6 +225,23 @@ void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t
 	}
 	if(newActions != 0)
 		group->controls[i].actions = newActions;
+}
+
+//--------------------------------------------------------------------------------------------------------------------------------//
+
+void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, void (*control_set_callback)(CTRLcode, void*), void* userData)
+{
+	uint32_t i = 0;
+	while(i < group->arraySize && group->controls[i].tag != tag)
+		i++;
+	
+	if(i >= group->arraySize)
+		return;
+
+	group->controls[i].inherit = 0;
+	g_controlToSet = &group->controls[i];
+	g_control_set_callback = control_set_callback;
+	g_controlSetCallbackUserData = userData;
 }
 
 //--------------------------------------------------------------------------------------------------------------------------------//

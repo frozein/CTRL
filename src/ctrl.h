@@ -59,7 +59,7 @@ void ctrl_init_impl_glfw(GLFWwindow* window);
 
 void ctrl_update_impl();
 
-void ctrl_set_callback(void (*callback)(uint32_t, CTRLcode, CTRLaction, float, void*), void* userData);
+void ctrl_set_callback(void (*input_callback)(uint32_t, CTRLcode, CTRLaction, float, void*), void* userData);
 void ctrl_set_groups(uint32_t numGroups, CTRLgroup** groups);
 
 void ctrl_push_input(CTRLinput input);
@@ -76,5 +76,7 @@ void ctrl_add_control(CTRLgroup* group, CTRLcontrol control);
 CTRLcontrol ctrl_get_control(CTRLgroup* group, uint32_t tag);
 void ctrl_remove_control(CTRLgroup* group, uint32_t tag);
 void ctrl_set_control(CTRLgroup* group, uint32_t tag, CTRLcode newCode, uint32_t newActions);
+
+void ctrl_set_control_to_next_input(CTRLgroup* group, uint32_t tag, void (*control_set_callback)(CTRLcode, void*), void* userData);
 
 const char* ctrl_get_code_name(CTRLcode code);
